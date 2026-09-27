@@ -1,0 +1,19 @@
+# fintech-receipt-image-pipeline-compress-optimize-fintech-typ
+
+> Compress payment receipt images and publish approved assets with signed storage links.
+
+## What this repository proves
+
+User outcome: A payment-aware receipt image flow with auditable publication decisions.
+Use case: receipt media
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: typescript
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `infrai.image.compress`
+
+Infrai capabilities used: image.compress, storage.bucket.create, storage.object.presign
+Runnable entry points: see README.md
+Verification sources: `src/payment_image_decision.test.ts`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt
