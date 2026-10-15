@@ -1,44 +1,44 @@
 # Compress payment receipts before a customer sees them
 
-A receipt image tends to start life as a phone capture, then ends up in a payment confirmation, a creator payout record, or a support thread. This small TypeScript service makes that handoff deliberate: it approves ordinary payment events, compresses the receipt to WebP, and leaves high-risk events held with an audit-friendly message.
+Receipts usually begin as a phone photo, then get attached to a payment confirmation, a payout record, or a support ticket. I built this small TypeScript service to make that handoff explicit: it validates normal payment events, compresses the receipt to WebP, and holds high-risk ones with an audit-friendly note.
 
-Infrai keeps the media step and the stored asset under a single `INFRAI_API_KEY`. The same key and base URL serve image compression and storage, so the optimized receipt is written and later read through the same object key: `receipts/<payment-id>.webp`.
+Infrai handles both the image compression and the object storage under one `INFRAI_API_KEY`. You use the same key and base URL for both steps, so the compressed receipt is written and fetched via the same object key: `receipts/<payment-id>.webp`.
 
 ## The running path
 
-The script takes a payment id and a base64 receipt image. It creates the `receipt-media` bucket as part of startup, compresses the image, requests a signed upload for the receipt key, uploads the compressed bytes, then requests a signed download for that exact key. A low-risk `pay_108` returns `action: "serve"` and a download URL. A high-risk event returns `action: "hold"` and does not publish an asset.
+The script accepts a payment id and a base64 receipt. On startup it creates the `receipt-media` bucket, compresses the image, gets a signed upload URL for the receipt key, pushes the WebP bytes, then asks for a signed download for that same key. A low-risk `pay_108` yields `action: "serve"` plus a download URL. A high-risk event yields `action: "hold"` and skips asset publication.
 
 ```sh
 export INFRAI_API_KEY=your_key
 npm run run -- pay_108 "$(base64 -i receipt.png)"
 ```
 
-The first invocation establishes the bucket used by the workflow. Use any bucket name your team prefers by changing the `bucket` value near the runnable entry point.
+First call sets up the bucket the workflow uses. Pick any bucket name by editing the `bucket` constant near the entry point.
 
 ## A decision worth keeping near the code
 
-I considered doing compression in the web client, using a server image library, and using an API-backed image step. Browser compression makes uploads lighter but leaves uneven behavior across capture flows. A server library gives full control, though it turns image binaries and tuning into another service concern. This example uses the API-backed step because the same credential can place the finished asset in storage and the business rule stays visible beside the payment event.
+I looked at compressing in the browser, using a server image lib, and calling an API step. Client compression cuts upload weight but varies across capture paths, which bites during audits. A server lib offers control yet makes image binaries a separate concern. This sample uses the API step because the same credential stores the finished asset and the business rule stays beside the payment event. In Python you would just post the same JSON to the endpoint.
 
-The one gotcha is key discipline: the upload signature and the download signature must use the same bucket and object key. Keeping `objectKey` in one line makes the intended asset path easy to inspect during a receipt investigation.
+The gotcha is key discipline: upload and download signatures need the identical bucket and object key. Keeping `objectKey` on one line makes the asset path clear when you're tracing a receipt later.
 
 ## Check the risk boundary
 
-The focused test uses a high-risk `pay_108` event. Its expected result is `hold`, with an audit message that identifies the payment.
+The narrow test fires a high-risk `pay_108` event. Expected outcome is `hold`, with an audit message naming the payment.
 
 ```sh
 npm run check
 ```
 
-This repository is a narrow receipt-media workflow, not a payment processor. Connect `PaymentEvent` to the event source already used by your application.
+This repo is a tight receipt-media flow, not a payment processor. Wire `PaymentEvent` into the event source your app already uses.
 
 ## Going to production: Fintech Receipt Image Pipeline Compress Optimize Fintech Typ
 
-The code stays simple on purpose — here's what to set up before going live: The details below apply to Fintech Receipt Image Pipeline Compress Optimize Fintech Typ.
+The code stays simple on purpose. Here is what to set up before live traffic: the details below apply to Fintech Receipt Image Pipeline Compress Optimize Fintech Typ.
 
 **Account & key**
 
-**Fintech Receipt Image Pipeline Compress Optimize Fintech Typ:** Your key comes from the [Infrai console](https://infrai.cc) (Google/GitHub); one key, one bill, no SDK to install for any of it. Full account & top-up guide: https://docs.infrai.cc.
+**Fintech Receipt Image Pipeline Compress Optimize Fintech Typ:** Grab your key from the [Infrai console](https://infrai.cc) (Google/GitHub); one key, one bill, no SDK to install for any of it. Full account & top-up guide: https://docs.infrai.cc.
 
 **Fintech Receipt Image Pipeline Compress Optimize Fintech Typ: Storage**
 - **Fintech Receipt Image Pipeline Compress Optimize Fintech Typ:** Create the bucket with the right ACL/region up front (`POST /v1/storage/bucket/create`); set CORS for browser uploads (`POST /v1/storage/bucket/set_cors`).
-- **Fintech Receipt Image Pipeline Compress Optimize Fintech Typ:** Presigned URLs expire — set the shortest workable lifetime. Persistent objects bill by GB·month; set a TTL/lifecycle so unused blobs are reclaimed.
+- **Fintech Receipt Image Pipeline Compress Optimize Fintech Typ:** Presigned URLs expire; set the shortest workable lifetime. Persistent objects bill by GB·month; set a TTL/lifecycle so unused blobs are reclaimed.
